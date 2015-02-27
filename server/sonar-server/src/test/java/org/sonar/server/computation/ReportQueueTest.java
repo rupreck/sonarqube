@@ -29,11 +29,11 @@ import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.config.Settings;
 import org.sonar.api.utils.System2;
-import org.sonar.core.component.ComponentDto;
 import org.sonar.core.computation.db.AnalysisReportDto;
 import org.sonar.core.persistence.DbSession;
 import org.sonar.core.persistence.DbTester;
 import org.sonar.process.ProcessConstants;
+import org.sonar.server.component.ComponentTesting;
 import org.sonar.server.component.db.ComponentDao;
 import org.sonar.server.computation.db.AnalysisReportDao;
 import org.sonar.server.db.DbClient;
@@ -76,9 +76,9 @@ public class ReportQueueTest {
     sut = new ReportQueue(dbClient, settings);
 
     try (DbSession session = dbClient.openSession(false)) {
-      dbClient.componentDao().insert(session, new ComponentDto().setKey("P1"));
-      dbClient.componentDao().insert(session, new ComponentDto().setKey("P2"));
-      dbClient.componentDao().insert(session, new ComponentDto().setKey("P3"));
+      dbClient.componentDao().insert(session, ComponentTesting.newProjectDto().setKey("P1"));
+      dbClient.componentDao().insert(session, ComponentTesting.newProjectDto().setKey("P2"));
+      dbClient.componentDao().insert(session, ComponentTesting.newProjectDto().setKey("P3"));
       session.commit();
     }
   }
