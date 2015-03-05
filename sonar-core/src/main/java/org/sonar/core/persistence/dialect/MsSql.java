@@ -30,7 +30,7 @@ public class MsSql extends AbstractDialect {
   public static final String ID = "mssql";
 
   public MsSql() {
-    super(ID, "sqlserver", "net.sourceforge.jtds.jdbc.Driver", "1", "0", "SELECT 1");
+    super(ID, "sqlserver", "com.microsoft.sqlserver.jdbc.SQLServerDriver", "1", "0", "SELECT 1");
   }
 
   @Override
@@ -40,7 +40,7 @@ public class MsSql extends AbstractDialect {
 
   @Override
   public boolean matchesJdbcURL(String jdbcConnectionURL) {
-    return StringUtils.startsWithIgnoreCase(jdbcConnectionURL, "jdbc:microsoft:sqlserver:")
+    return StringUtils.startsWithIgnoreCase(jdbcConnectionURL, "jdbc:sqlserver:")
       || StringUtils.startsWithIgnoreCase(jdbcConnectionURL, "jdbc:jtds:sqlserver:");
   }
 
