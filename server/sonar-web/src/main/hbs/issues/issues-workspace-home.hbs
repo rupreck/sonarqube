@@ -1,0 +1,100 @@
+<div class="text-center spacer-bottom" style="padding: 5% 0;">
+  <h1><i class="icon-issues"></i>&nbsp;&nbsp;&nbsp;Issues</h1>
+</div>
+
+<div class="columns">
+  <div class="column-third">
+    <table class="data spacer-bottom">
+      <tr>
+        <td><h2><a href="#">My Issues</a></h2></td>
+        <td class="thin text-right">172</td>
+      </tr>
+    </table>
+
+    <table class="data zebra">
+      <tr>
+        <td><a class="link-no-underline" href="#">Yesterday & Today</a></td>
+        <td class="thin text-right">7</td>
+      </tr>
+      <tr>
+        <td><a class="link-no-underline" href="#">Over last week</a></td>
+        <td class="thin text-right">19</td>
+      </tr>
+      <tr>
+        <td><a class="link-no-underline" href="#">Over last month</a></td>
+        <td class="thin text-right">138</td>
+      </tr>
+    </table>
+    <p class="spacer-bottom">--</p>
+    <table class="data zebra">
+      <tr>
+        <td><a class="link-no-underline" href="#">{{qualifierIcon 'TRK'}} SonarQube</a></td>
+        <td class="thin text-right">138</td>
+      </tr>
+      <tr>
+        <td><a class="link-no-underline" href="#">{{qualifierIcon 'TRK'}} SonarQube Maven Plugin</a></td>
+        <td class="thin text-right">19</td>
+      </tr>
+      <tr>
+        <td><a class="link-no-underline" href="#">{{qualifierIcon 'TRK'}} SonarQube Integration for IntelliJ</a></td>
+        <td class="thin text-right">7</td>
+      </tr>
+    </table>
+  </div>
+  <div class="column-third">
+    <table class="data spacer-bottom">
+      <tr>
+        <td><h2>&nbsp;</h2></td>
+        <td class="thin text-right">&nbsp;</td>
+      </tr>
+    </table>
+
+    <table class="data zebra">
+      <tr>
+        <td><a class="link-no-underline" href="#">{{severityIcon 'BLOCKER'}} Blocker</a></td>
+        <td class="thin text-right">7</td>
+      </tr>
+      <tr>
+        <td><a class="link-no-underline" href="#">{{severityIcon 'CRITICAL'}} Critical</a></td>
+        <td class="thin text-right">19</td>
+      </tr>
+      <tr>
+        <td><a class="link-no-underline" href="#">{{severityIcon 'MAJOR'}} Major</a></td>
+        <td class="thin text-right">138</td>
+      </tr>
+    </table>
+    <p class="spacer-bottom">--</p>
+    <table class="data zebra">
+      <tr>
+        <td><a class="link-no-underline" href="#">{{statusIcon 'OPEN'}} Open</a></td>
+        <td class="thin text-right">7</td>
+      </tr>
+      <tr>
+        <td><a class="link-no-underline" href="#">{{statusIcon 'REOPENED'}} Reopened</a></td>
+        <td class="thin text-right">19</td>
+      </tr>
+      <tr>
+        <td><a class="link-no-underline" href="#">{{statusIcon 'CONFIRMED'}} Confirmed</a></td>
+        <td class="thin text-right">138</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="column-third bordered-left">
+    <table class="data spacer-bottom">
+      <tr>
+        <td><h2>My Filters</h2></td>
+        <td class="thin text-right">&nbsp;</td>
+      </tr>
+    </table>
+
+    <table class="data zebra">
+      {{#each filters}}
+        <tr>
+          <td><a class="link-no-underline" href="#id={{id}}">{{name}}</a></td>
+          <td class="thin text-right">7</td>
+        </tr>
+      {{/each}}
+    </table>
+  </div>
+</div>

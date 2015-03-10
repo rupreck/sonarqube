@@ -19,37 +19,16 @@
 #
 
 define [
-  'components/navigator/router'
-], (
-  Router
-) ->
+  'widgets/issue-filter'
+  'templates/issues'
+], (IssueFilter) ->
 
-  class extends Router
-    routes:
-      '': 'home'
-      ':query': 'index'
+  $ = jQuery
 
-
-    initialize: (options) ->
-      super
-      @listenTo options.app.state, 'change:filter', @updateRoute
+  class extends Marionette.ItemView
+    template: Templates['issues-workspace-home']
 
 
-    home: ->
-      @options.app.controller.showHomePage()
-
-
-    index: (query) ->
-      query = @options.app.controller.parseQuery query
-      if query.id?
-        filter = @options.app.filters.get query.id
-        delete query.id
-        filter.fetch().done =>
-          if Object.keys(query).length > 0
-            @options.app.controller.applyFilter filter, true
-            @options.app.state.setQuery query
-            @options.app.state.set changed: true
-          else
-            @options.app.controller.applyFilter filter
-      else
-        @options.app.state.setQuery query
+    serializeData: ->
+      _.extend super,
+        filters: _.sortBy @options.app.filters.toJSON(), 'name'
