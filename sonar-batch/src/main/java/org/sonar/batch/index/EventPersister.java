@@ -57,7 +57,7 @@ public class EventPersister {
     if (event.getDate() == null) {
       event.setSnapshot(batchResource.snapshot());
     } else {
-      event.setResourceId(batchResource.resource().getId());
+//      event.setResourceId(batchResource.resource().getId());
     }
 
     session.save(event);
