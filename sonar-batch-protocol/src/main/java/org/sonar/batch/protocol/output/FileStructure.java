@@ -49,6 +49,10 @@ public class FileStructure {
     return new File(dir, "metadata.pb");
   }
 
+  public File measuresFile() {
+    return new File(dir, "measures.pb");
+  }
+
   public File fileFor(Domain domain, int componentRef) {
     return new File(dir, domain.filePrefix + componentRef + ".pb");
   }

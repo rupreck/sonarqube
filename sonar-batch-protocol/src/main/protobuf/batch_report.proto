@@ -36,6 +36,7 @@ Notes
 import "constants.proto";
 
 option java_package = "org.sonar.batch.protocol.output";
+
 option optimize_for = SPEED;
 
 message Metadata {
@@ -55,48 +56,79 @@ message Component {
   optional ComponentType type = 4;
   optional bool is_test = 5;
   optional string language = 6;
-  repeated int32 child_refs = 7 [packed=true];
+  repeated int32 child_refs = 7 [packed = true];
 
   // temporary fields during development of computation stack
   optional int32 snapshot_id = 8;
   optional string uuid = 9;
 }
 
-message Issue {
-    optional string rule_repository = 1;
-    optional string rule_key = 2;
-    optional int32 line = 3;
-    optional string msg = 4;
-    optional Severity severity = 5;
-    repeated string tags = 6;
+message Measures {
+
+  repeated Measure measure = 1;
+
+  message Measure {
+    optional double value = 1;
+    optional string text_value = 2;
+    optional int32 tendency = 3;
+    optional string description = 4;
+    optional int64 measure_date = 5;
+    optional Severity rule_priority = 6;
+    optional string alert_status = 7;
+    optional string alert_text = 8;
+    optional double variation_value_1 = 9;
+    optional double variation_value_2 = 10;
+    optional double variation_value_3 = 11;
+    optional double variation_value_4 = 12;
+    optional double variation_value_5 = 13;
+    optional string url = 14;
+    optional bytes data = 15;
 
     // temporary fields during development of computation stack
-    optional double effort_to_fix = 7;
-    optional bool is_new = 8;
-    optional string uuid = 9;
-    optional int64 debt_in_minutes = 10;
-    optional string resolution = 11;
-    optional string status = 12;
-    optional string checksum = 13;
-    optional bool manual_severity = 14;
-    optional string reporter = 15;
-    optional string assignee = 16;
-    optional string action_plan_key = 17;
-    optional string attributes = 18;
-    optional string author_login = 19;
-    optional int64 creation_date = 20;
-    optional int64 close_date = 21;
-    optional int64 update_date = 22;
-    optional int64 selected_at = 23;
-    optional string diff_fields = 24;
-    optional bool is_changed = 25;
-    optional bool must_send_notification = 26;
+    optional int32 metric_id = 16;
+    optional int32 snapshot_id = 17;
+    optional int32 project_id = 18;
+    optional int32 rule_id = 19;
+    optional int32 characteristic_id = 20;
+    optional int32 person_id = 21;
+  }
+}
+
+message Issue {
+  optional string rule_repository = 1;
+  optional string rule_key = 2;
+  optional int32 line = 3;
+  optional string msg = 4;
+  optional Severity severity = 5;
+  repeated string tags = 6;
+
+  // temporary fields during development of computation stack
+  optional double effort_to_fix = 7;
+  optional bool is_new = 8;
+  optional string uuid = 9;
+  optional int64 debt_in_minutes = 10;
+  optional string resolution = 11;
+  optional string status = 12;
+  optional string checksum = 13;
+  optional bool manual_severity = 14;
+  optional string reporter = 15;
+  optional string assignee = 16;
+  optional string action_plan_key = 17;
+  optional string attributes = 18;
+  optional string author_login = 19;
+  optional int64 creation_date = 20;
+  optional int64 close_date = 21;
+  optional int64 update_date = 22;
+  optional int64 selected_at = 23;
+  optional string diff_fields = 24;
+  optional bool is_changed = 25;
+  optional bool must_send_notification = 26;
 }
 
 message Issues {
-    optional int32 component_ref = 1;
-    repeated Issue list = 2;
-    
-    // Temporary field for issues on deleted components
-    optional string component_uuid = 3;
+  optional int32 component_ref = 1;
+  repeated Issue list = 2;
+
+  // temporary field for issues on deleted components
+  optional string component_uuid = 3;
 }
