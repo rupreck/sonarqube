@@ -21,10 +21,7 @@ package org.sonar.server.issue.index;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
+import com.google.common.collect.*;
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -66,6 +63,7 @@ import javax.annotation.Nullable;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.regex.Pattern;
 
 import static com.google.common.collect.Lists.newArrayList;
 
@@ -74,6 +72,7 @@ import static com.google.common.collect.Lists.newArrayList;
  * All the requests are listed here.
  */
 public class IssueIndex extends BaseIndex {
+
 
   private static final int SCROLL_TIME_IN_MINUTES = 3;
 
@@ -100,6 +99,8 @@ public class IssueIndex extends BaseIndex {
   // TODO to be documented
   // TODO move to Facets ?
   private static final String FACET_SUFFIX_MISSING = "_missing";
+
+  private static final String IS_ASSIGNED_FILTER = "__isAssigned";
 
   private static final int DEFAULT_FACET_SIZE = 15;
   private static final Duration TWENTY_DAYS = Duration.standardDays(20L);
@@ -212,11 +213,10 @@ public class IssueIndex extends BaseIndex {
     filters.put("__authorization", createAuthorizationFilter(query.checkAuthorization(), query.userLogin(), query.userGroups()));
 
     // Issue is assigned Filter
-    String isAssigned = "__isAssigned";
     if (BooleanUtils.isTrue(query.assigned())) {
-      filters.put(isAssigned, FilterBuilders.existsFilter(IssueIndexDefinition.FIELD_ISSUE_ASSIGNEE));
+      filters.put(IS_ASSIGNED_FILTER, FilterBuilders.existsFilter(IssueIndexDefinition.FIELD_ISSUE_ASSIGNEE));
     } else if (BooleanUtils.isFalse(query.assigned())) {
-      filters.put(isAssigned, FilterBuilders.missingFilter(IssueIndexDefinition.FIELD_ISSUE_ASSIGNEE));
+      filters.put(IS_ASSIGNED_FILTER, FilterBuilders.missingFilter(IssueIndexDefinition.FIELD_ISSUE_ASSIGNEE));
     }
 
     // Issue is planned Filter
@@ -473,13 +473,15 @@ public class IssueIndex extends BaseIndex {
 
     // Same as in super.stickyFacetBuilder
     Map<String, FilterBuilder> assigneeFilters = Maps.newHashMap(filters);
-    assigneeFilters.remove("__isAssigned");
+    assigneeFilters.remove(IS_ASSIGNED_FILTER);
     assigneeFilters.remove(fieldName);
     StickyFacetBuilder assigneeFacetBuilder = new StickyFacetBuilder(queryBuilder, assigneeFilters);
     BoolFilterBuilder facetFilter = assigneeFacetBuilder.getStickyFacetFilter(fieldName);
     FilterAggregationBuilder facetTopAggregation = assigneeFacetBuilder.buildTopFacetAggregation(fieldName, facetName, facetFilter, DEFAULT_FACET_SIZE);
-    if (!query.assignees().isEmpty()) {
-      facetTopAggregation = assigneeFacetBuilder.addSelectedItemsToFacet(fieldName, facetName, facetTopAggregation, query.assignees());
+
+    Collection<String> assigneesEscaped = escapeValuesForFacetInclusion(query.assignees());
+    if (!assigneesEscaped.isEmpty()) {
+      facetTopAggregation = assigneeFacetBuilder.addSelectedItemsToFacet(fieldName, facetName, facetTopAggregation, assigneesEscaped);
     }
 
     // Add missing facet for unassigned issues
@@ -494,6 +496,15 @@ public class IssueIndex extends BaseIndex {
       .subAggregation(facetTopAggregation);
   }
 
+  private Collection<String> escapeValuesForFacetInclusion(@Nullable Collection<String> values) {
+    return values == null ? Arrays.<String>asList() : Collections2.transform(values, new Function<String, String>() {
+        @Override
+        public String apply(String input) {
+          return Pattern.quote(input);
+        }
+      });
+  }
+
   private void addAssignedToMeFacetIfNeeded(SearchRequestBuilder builder, SearchOptions options, IssueQuery query, Map<String, FilterBuilder> filters, QueryBuilder queryBuilder) {
     String login = UserSession.get().login();
 
@@ -505,14 +516,17 @@ public class IssueIndex extends BaseIndex {
     String facetName = IssueFilterParameters.FACET_ASSIGNED_TO_ME;
 
     // Same as in super.stickyFacetBuilder
-    Map<String, FilterBuilder> assigneeFilters = Maps.newHashMap(filters);
-    StickyFacetBuilder assignedToMeFacetBuilder = new StickyFacetBuilder(queryBuilder, assigneeFilters);
-    BoolFilterBuilder facetFilter = assignedToMeFacetBuilder.getStickyFacetFilter("__assigned_to_me");
+    StickyFacetBuilder assignedToMeFacetBuilder = new StickyFacetBuilder(queryBuilder, filters);
+    BoolFilterBuilder facetFilter = assignedToMeFacetBuilder.getStickyFacetFilter(IS_ASSIGNED_FILTER, fieldName);
 
-    builder.addAggregation(AggregationBuilders
-      .filter(facetName)
+    FilterAggregationBuilder facetTopAggregation = AggregationBuilders
+      .filter(facetName + "__filter")
       .filter(facetFilter)
-      .subAggregation(AggregationBuilders.terms(facetName + "__terms").field(fieldName).include(login)));
+      .subAggregation(AggregationBuilders.terms(facetName + "__terms").field(fieldName).include(login));
+
+    builder.addAggregation(
+      AggregationBuilders.global(facetName)
+        .subAggregation(facetTopAggregation));
   }
 
   private AggregationBuilder createResolutionFacet(Map<String, FilterBuilder> filters, QueryBuilder esQuery) {
@@ -581,8 +595,12 @@ public class IssueIndex extends BaseIndex {
 
     requestBuilder.setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(),
       createBoolFilter(query)));
+
     GlobalBuilder topAggreg = AggregationBuilders.global("tags");
-    TermsBuilder issueTags = AggregationBuilders.terms("tags__issues")
+    String tagsOnIssuesSubAggregation = "tags__issues";
+    String tagsOnRulesSubAggregation = "tags__rules";
+
+    TermsBuilder issueTags = AggregationBuilders.terms(tagsOnIssuesSubAggregation)
       .field(IssueIndexDefinition.FIELD_ISSUE_TAGS)
       .size(maxNumberOfTags)
       .order(Terms.Order.term(true))
@@ -590,7 +608,7 @@ public class IssueIndex extends BaseIndex {
     if (textQuery != null) {
       issueTags.include(String.format(SUBSTRING_MATCH_REGEXP, textQuery));
     }
-    TermsBuilder ruleTags = AggregationBuilders.terms("tags__rules")
+    TermsBuilder ruleTags = AggregationBuilders.terms(tagsOnRulesSubAggregation)
       .field(RuleNormalizer.RuleField.ALL_TAGS.field())
       .size(maxNumberOfTags)
       .order(Terms.Order.term(true))
@@ -602,8 +620,8 @@ public class IssueIndex extends BaseIndex {
     SearchResponse searchResponse = requestBuilder.addAggregation(topAggreg.subAggregation(issueTags).subAggregation(ruleTags)).get();
     Global allTags = searchResponse.getAggregations().get("tags");
     SortedSet<String> result = Sets.newTreeSet();
-    Terms issuesResult = allTags.getAggregations().get("tags__issues");
-    Terms rulesResult = allTags.getAggregations().get("tags__rules");
+    Terms issuesResult = allTags.getAggregations().get(tagsOnIssuesSubAggregation);
+    Terms rulesResult = allTags.getAggregations().get(tagsOnRulesSubAggregation);
     result.addAll(EsUtils.termsKeys(issuesResult));
     result.addAll(EsUtils.termsKeys(rulesResult));
     List<String> resultAsList = Lists.newArrayList(result);
@@ -623,12 +641,12 @@ public class IssueIndex extends BaseIndex {
   private Terms listTermsMatching(String fieldName, IssueQuery query, @Nullable String textQuery, Terms.Order termsOrder, int maxNumberOfTags) {
     SearchRequestBuilder requestBuilder = getClient()
       .prepareSearch(IssueIndexDefinition.INDEX)
+      // Avoids returning search hits
+      .setSearchType(SearchType.COUNT)
       .setTypes(IssueIndexDefinition.TYPE_ISSUE);
 
     requestBuilder.setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(),
       createBoolFilter(query)));
-
-    // TODO do not return hits
 
     TermsBuilder aggreg = AggregationBuilders.terms("_ref")
       .field(fieldName)

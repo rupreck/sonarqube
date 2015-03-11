@@ -23,8 +23,6 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.sonar.api.notifications.Notification;
 import org.sonar.api.notifications.NotificationChannel;
 import org.sonar.api.notifications.NotificationDispatcher;
@@ -35,23 +33,14 @@ import static org.mockito.Mockito.*;
 
 public class NewIssuesNotificationDispatcherTest {
 
-  @Mock
-  private NotificationManager notifications;
-
-  @Mock
-  private NotificationDispatcher.Context context;
-
-  @Mock
-  private NotificationChannel emailChannel;
-
-  @Mock
-  private NotificationChannel twitterChannel;
-
-  private NewIssuesNotificationDispatcher dispatcher;
+  private NotificationManager notifications = mock(NotificationManager.class);
+  private NotificationDispatcher.Context context = mock(NotificationDispatcher.Context.class);
+  private NotificationChannel emailChannel = mock(NotificationChannel.class);
+  private NotificationChannel twitterChannel = mock(NotificationChannel.class);
+  private NewIssuesNotificationDispatcher dispatcher = mock(NewIssuesNotificationDispatcher.class);
 
   @Before
-  public void init() {
-    MockitoAnnotations.initMocks(this);
+  public void setUp() {
     dispatcher = new NewIssuesNotificationDispatcher(notifications);
   }
 
@@ -70,7 +59,7 @@ public class NewIssuesNotificationDispatcherTest {
     recipients.put("user2", twitterChannel);
     when(notifications.findNotificationSubscribers(dispatcher, "struts")).thenReturn(recipients);
 
-    Notification notification = new NewIssuesNotification().setFieldValue("projectKey", "struts");
+    Notification notification = new Notification(NewIssuesNotification.TYPE).setFieldValue("projectKey", "struts");
     dispatcher.performDispatch(notification, context);
 
     verify(context).addUser("user1", emailChannel);
