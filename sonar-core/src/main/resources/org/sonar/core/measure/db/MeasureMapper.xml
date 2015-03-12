@@ -18,7 +18,7 @@
     metric.name as metricKey
   </sql>
 
-  <select id="selectByKey" parameterType="map" resultType="Measure">
+  <select id="selectByComponentKeyAndMetricId" parameterType="map" resultType="Measure">
     SELECT
     <include refid="measureColumns"/>
     FROM project_measures pm

@@ -235,6 +235,92 @@ public final class Constants {
     // @@protoc_insertion_point(enum_scope:ComponentType)
   }
 
+  /**
+   * Protobuf enum {@code EventCategory}
+   *
+   * <pre>
+   * temporary enum during development of computation stack
+   * </pre>
+   */
+  public enum EventCategory
+      implements com.google.protobuf.ProtocolMessageEnum {
+    /**
+     * <code>ALERT = 0;</code>
+     */
+    ALERT(0, 0),
+    /**
+     * <code>PROFILE = 1;</code>
+     */
+    PROFILE(1, 1),
+    ;
+
+    /**
+     * <code>ALERT = 0;</code>
+     */
+    public static final int ALERT_VALUE = 0;
+    /**
+     * <code>PROFILE = 1;</code>
+     */
+    public static final int PROFILE_VALUE = 1;
+
+
+    public final int getNumber() { return value; }
+
+    public static EventCategory valueOf(int value) {
+      switch (value) {
+        case 0: return ALERT;
+        case 1: return PROFILE;
+        default: return null;
+      }
+    }
+
+    public static com.google.protobuf.Internal.EnumLiteMap<EventCategory>
+        internalGetValueMap() {
+      return internalValueMap;
+    }
+    private static com.google.protobuf.Internal.EnumLiteMap<EventCategory>
+        internalValueMap =
+          new com.google.protobuf.Internal.EnumLiteMap<EventCategory>() {
+            public EventCategory findValueByNumber(int number) {
+              return EventCategory.valueOf(number);
+            }
+          };
+
+    public final com.google.protobuf.Descriptors.EnumValueDescriptor
+        getValueDescriptor() {
+      return getDescriptor().getValues().get(index);
+    }
+    public final com.google.protobuf.Descriptors.EnumDescriptor
+        getDescriptorForType() {
+      return getDescriptor();
+    }
+    public static final com.google.protobuf.Descriptors.EnumDescriptor
+        getDescriptor() {
+      return org.sonar.batch.protocol.Constants.getDescriptor().getEnumTypes().get(2);
+    }
+
+    private static final EventCategory[] VALUES = values();
+
+    public static EventCategory valueOf(
+        com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
+      if (desc.getType() != getDescriptor()) {
+        throw new java.lang.IllegalArgumentException(
+          "EnumValueDescriptor is not for this type.");
+      }
+      return VALUES[desc.getIndex()];
+    }
+
+    private final int index;
+    private final int value;
+
+    private EventCategory(int index, int value) {
+      this.index = index;
+      this.value = value;
+    }
+
+    // @@protoc_insertion_point(enum_scope:EventCategory)
+  }
+
 
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -248,17 +334,18 @@ public final class Constants {
       "\t\n\005MINOR\020\001\022\t\n\005MAJOR\020\002\022\014\n\010CRITICAL\020\003\022\013\n\007B" +
       "LOCKER\020\004*X\n\rComponentType\022\013\n\007PROJECT\020\000\022\n" +
       "\n\006MODULE\020\001\022\r\n\tDIRECTORY\020\002\022\010\n\004FILE\020\003\022\010\n\004V" +
-      "IEW\020\004\022\013\n\007SUBVIEW\020\005B\034\n\030org.sonar.batch.pr" +
-      "otocolH\001"
+      "IEW\020\004\022\013\n\007SUBVIEW\020\005*\'\n\rEventCategory\022\t\n\005A" +
+      "LERT\020\000\022\013\n\007PROFILE\020\001B\034\n\030org.sonar.batch.p" +
+      "rotocolH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
-      new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
-        public com.google.protobuf.ExtensionRegistry assignDescriptors(
-            com.google.protobuf.Descriptors.FileDescriptor root) {
-          descriptor = root;
-          return null;
-        }
-      };
+        new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
+          public com.google.protobuf.ExtensionRegistry assignDescriptors(
+              com.google.protobuf.Descriptors.FileDescriptor root) {
+            descriptor = root;
+            return null;
+          }
+        };
     com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
         new com.google.protobuf.Descriptors.FileDescriptor[] {

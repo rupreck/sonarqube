@@ -37,3 +37,9 @@ enum ComponentType {
   VIEW = 4;
   SUBVIEW = 5;
 }
+
+// temporary enum during development of computation stack
+enum EventCategory {
+  ALERT = 0;
+  PROFILE = 1;
+}

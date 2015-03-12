@@ -48,6 +48,15 @@ message Metadata {
   optional int32 deleted_components_count = 5;
 }
 
+// temporary message during development of computation stack
+message Event {
+  optional int32 component_ref = 1;
+  optional string name = 2;
+  optional string description = 3;
+  optional EventCategory category = 4;
+  optional string event_data = 5;
+}
+
 message Component {
   optional int32 ref = 1;
   optional string path = 2;
@@ -56,10 +65,13 @@ message Component {
   optional bool is_test = 5;
   optional string language = 6;
   repeated int32 child_refs = 7 [packed=true];
+  // Only available on PROJECT and MODULE type
+  optional string version = 12;
 
   // temporary fields during development of computation stack
-  optional int32 snapshot_id = 8;
+  optional int64 snapshot_id = 8;
   optional string uuid = 9;
+  repeated Event events = 11;
 }
 
 message Issue {
@@ -100,3 +112,4 @@ message Issues {
     // Temporary field for issues on deleted components
     optional string component_uuid = 3;
 }
+
