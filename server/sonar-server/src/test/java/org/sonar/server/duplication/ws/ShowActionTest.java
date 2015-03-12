@@ -88,7 +88,7 @@ public class ShowActionTest {
     String data = "{duplications}";
     MeasureKey measureKey = MeasureKey.of(componentKey, CoreMetrics.DUPLICATIONS_DATA_KEY);
     when(measureDao.getNullableByKey(session, measureKey)).thenReturn(
-      MeasureDto.createFor(measureKey).setTextValue("{duplications}")
+      MeasureDto.createFor(measureKey).setData("{duplications}")
     );
 
     List<DuplicationsParser.Block> blocks = newArrayList(new DuplicationsParser.Block(newArrayList(new DuplicationsParser.Duplication(componentDto, 1, 2))));
@@ -114,7 +114,7 @@ public class ShowActionTest {
     String data = "{duplications}";
     MeasureKey measureKey = MeasureKey.of(componentKey, CoreMetrics.DUPLICATIONS_DATA_KEY);
     when(measureDao.getNullableByKey(session, measureKey)).thenReturn(
-      MeasureDto.createFor(measureKey).setTextValue("{duplications}")
+      MeasureDto.createFor(measureKey).setData("{duplications}")
       );
 
     List<DuplicationsParser.Block> blocks = newArrayList(new DuplicationsParser.Block(newArrayList(new DuplicationsParser.Duplication(componentDto, 1, 2))));

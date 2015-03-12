@@ -20,6 +20,7 @@
 
 package org.sonar.core.measure.db;
 
+import com.google.common.base.Strings;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,8 +33,7 @@ public class MeasureDtoTest {
     MeasureDto measureDto = MeasureDto.createFor(MeasureKey.of("component", "metric"))
       .setId(10L)
       .setValue(2d)
-      .setTextValue("text value")
-      .setData(new byte[]{})
+      .setData("text value")
       .setVariation(1, 1d)
       .setVariation(2, 2d)
       .setVariation(3, 3d)
@@ -53,12 +53,10 @@ public class MeasureDtoTest {
   @Test
   public void test_data() throws Exception {
     assertThat(MeasureDto.createFor(MeasureKey.of("component", "metric"))
-      .setTextValue("text value")
-      .setData(null).getData()).isEqualTo("text value");
+      .setData("text value").getData()).isEqualTo("text value");
 
     assertThat(MeasureDto.createFor(MeasureKey.of("component", "metric"))
-      .setTextValue(null)
-      .setData(new byte[]{}).getData()).isNotNull();
+      .setData(Strings.repeat("1", 4001)).getData()).isNotNull();
   }
 
   @Test

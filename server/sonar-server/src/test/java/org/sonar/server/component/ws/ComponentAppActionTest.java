@@ -99,7 +99,7 @@ public class ComponentAppActionTest {
     when(dbClient.propertiesDao()).thenReturn(propertiesDao);
     when(dbClient.measureDao()).thenReturn(measureDao);
 
-    when(measureDao.findByComponentKeyAndMetricKeys(anyString(), anyListOf(String.class), eq(session))).thenReturn(measures);
+    when(measureDao.findByComponentKeyAndMetricKeys(eq(session), anyString(), anyListOf(String.class))).thenReturn(measures);
 
     tester = new WsTester(new ComponentsWs(new ComponentAppAction(dbClient, durations, i18n), mock(SearchAction.class)));
   }
@@ -145,7 +145,7 @@ public class ComponentAppActionTest {
     WsTester.TestRequest request = tester.newGetRequest("api/components", "app").setParam("uuid", COMPONENT_UUID);
     request.execute().assertJson(getClass(), "app_with_measures.json");
 
-    verify(measureDao).findByComponentKeyAndMetricKeys(eq(COMPONENT_KEY), measureKeysCaptor.capture(), eq(session));
+    verify(measureDao).findByComponentKeyAndMetricKeys(eq(session), eq(COMPONENT_KEY), measureKeysCaptor.capture());
     assertThat(measureKeysCaptor.getValue()).contains(CoreMetrics.LINES_KEY, CoreMetrics.COVERAGE_KEY, CoreMetrics.DUPLICATED_LINES_DENSITY_KEY,
       CoreMetrics.TECHNICAL_DEBT_KEY);
   }
@@ -239,7 +239,7 @@ public class ComponentAppActionTest {
   }
 
   private void addMeasure(String metricKey, String value) {
-    measures.add(MeasureDto.createFor(MeasureKey.of(COMPONENT_KEY, metricKey)).setTextValue(value));
+    measures.add(MeasureDto.createFor(MeasureKey.of(COMPONENT_KEY, metricKey)).setData(value));
   }
 
 }

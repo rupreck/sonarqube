@@ -1,0 +1,27 @@
+<dataset>
+  <project_measures
+      id="1"
+      snapshot_id="2"
+      metric_id="3"
+      characteristic_id="4"
+      rule_id="5"
+      project_id="6"
+      person_id="7"
+      value="2.5"
+      text_value="measure-value"
+      tendency="42"
+      rule_priority="0"
+      measure_date="12345678987654321"
+      measure_data="[null]"
+      variation_value_1="1.1"
+      variation_value_2="2.2"
+      variation_value_3="3.3"
+      variation_value_4="4.4"
+      variation_value_5="5.5"
+      alert_status="alert"
+      alert_text="alert-text"
+      url="www.measures.com"
+      description="measure-description"
+      rules_category_id="[null]"
+      />
+</dataset>

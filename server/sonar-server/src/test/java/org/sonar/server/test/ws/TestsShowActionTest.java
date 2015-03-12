@@ -97,7 +97,7 @@ public class TestsShowActionTest {
     MockUserSession.set().addComponentPermission(UserRole.CODEVIEWER, "SonarQube", TEST_PLAN_KEY);
 
     when(measureDao.findByComponentKeyAndMetricKey(TEST_PLAN_KEY, "test_data", session)).thenReturn(MeasureDto.createFor(MeasureKey.of(TEST_PLAN_KEY, "test_data"))
-      .setTextValue("<tests-details>" +
+      .setData("<tests-details>" +
         "<testcase status=\"ok\" time=\"10\" name=\"test1\"/>" +
         "<testcase status=\"error\" time=\"97\" name=\"test2\">" +
         "<error message=\"expected:&lt;true&gt; but was:&lt;false&gt;\">" +
@@ -122,7 +122,7 @@ public class TestsShowActionTest {
     MockUserSession.set().addComponentPermission(UserRole.CODEVIEWER, "SonarQube", TEST_PLAN_KEY);
 
     when(measureDao.findByComponentKeyAndMetricKey(TEST_PLAN_KEY, "test_data", session)).thenReturn(MeasureDto.createFor(MeasureKey.of(TEST_PLAN_KEY, "test_data"))
-      .setTextValue("<tests-details>" +
+      .setData("<tests-details>" +
         "<testcase status=\"ok\" time=\"12.5\" name=\"test1\"/>" +
         "</tests-details>"));
 
