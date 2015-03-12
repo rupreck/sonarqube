@@ -22,6 +22,7 @@ package org.sonar.core.purge;
 import org.apache.ibatis.annotations.Param;
 
 import javax.annotation.Nullable;
+
 import java.util.List;
 
 public interface PurgeMapper {
@@ -78,7 +79,7 @@ public interface PurgeMapper {
 
   void deleteResourceManualMeasures(@Param("resourceIds") List<Long> resourceIds);
 
-  void deleteResourceEvents(@Param("resourceIds") List<Long> resourceIds);
+  void deleteComponentEvents(@Param("componentUuids") List<String> componentUuids);
 
   void deleteResourceActionPlans(@Param("resourceIds") List<Long> resourceIds);
 
