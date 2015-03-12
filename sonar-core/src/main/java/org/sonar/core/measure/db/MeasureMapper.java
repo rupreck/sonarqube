@@ -37,4 +37,5 @@ public interface MeasureMapper {
 
   long countByKey(@Param("key") MeasureKey key);
 
+  void insert(MeasureDto measureDto);
 }

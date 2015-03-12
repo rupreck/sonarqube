@@ -42,12 +42,14 @@ public class BatchReportReader {
     return ProtobufUtil.readFile(file, BatchReport.Metadata.PARSER);
   }
 
-  public List<BatchReport.Measures.Measure> readMeasures() {
-    File file = fileStructure.measuresFile();
-    if (isNotAnExistingFile(file)) {
-
+  public List<BatchReport.Measure> readComponentMeasures(int componentRef) {
+    File file = fileStructure.fileFor(FileStructure.Domain.MEASURES, componentRef);
+    if (file.exists() && file.isFile()) {
+      // all the measures are loaded in memory
+      BatchReport.Measures measures = ProtobufUtil.readFile(file, BatchReport.Measures.PARSER);
+      return measures.getMeasureList();
     }
-    return ProtobufUtil.readFile(file, BatchReport.Measures.PARSER).getMeasureList();
+    return Collections.emptyList();
   }
 
   public BatchReport.Component readComponent(int componentRef) {

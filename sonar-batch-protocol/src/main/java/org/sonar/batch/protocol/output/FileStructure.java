@@ -27,7 +27,7 @@ import java.io.File;
 public class FileStructure {
 
   public static enum Domain {
-    ISSUES("issues-"), ISSUES_ON_DELETED("issues-deleted-"), COMPONENT("component-");
+    ISSUES("issues-"), ISSUES_ON_DELETED("issues-deleted-"), COMPONENT("component-"), MEASURES("measures-");
 
     private final String filePrefix;
 
@@ -47,10 +47,6 @@ public class FileStructure {
 
   public File metadataFile() {
     return new File(dir, "metadata.pb");
-  }
-
-  public File measuresFile() {
-    return new File(dir, "measures.pb");
   }
 
   public File fileFor(Domain domain, int componentRef) {
