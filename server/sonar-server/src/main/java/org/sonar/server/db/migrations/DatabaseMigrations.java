@@ -77,6 +77,7 @@ public interface DatabaseMigrations {
     RemoveSortFieldFromIssueFiltersMigration.class,
 
     // 5.1
+    AddIssuesColumns.class,
     FeedIssueTags.class,
     FeedUsersLongDates.class,
     RenameComponentRelatedParamsInIssueFilters.class,
