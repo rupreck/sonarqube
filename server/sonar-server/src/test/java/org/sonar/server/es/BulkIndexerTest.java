@@ -23,8 +23,6 @@ import com.google.common.collect.ImmutableMap;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
-import org.elasticsearch.common.unit.ByteSizeUnit;
-import org.elasticsearch.common.unit.ByteSizeValue;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -67,8 +65,7 @@ public class BulkIndexerTest {
     assertThat(replicas()).isEqualTo(1);
 
     BulkIndexer indexer = new BulkIndexer(esTester.client(), FakeIndexDefinition.INDEX)
-      .setLarge(true)
-      .setFlushByteSize(new ByteSizeValue(1, ByteSizeUnit.BYTES).bytes());
+      .setLarge(true);
     indexer.start();
 
     // replicas are temporarily disabled

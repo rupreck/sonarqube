@@ -22,15 +22,21 @@ package org.sonar.server.es;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.ActionRequest;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequestBuilder;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.common.unit.ByteSizeUnit;
 import org.elasticsearch.common.unit.ByteSizeValue;
+import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.search.SearchHit;
 import org.picocontainer.Startable;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
@@ -38,6 +44,8 @@ import org.sonar.server.util.ProgressLogger;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -49,19 +57,20 @@ import java.util.concurrent.atomic.AtomicLong;
  * </ul>
  */
 public class BulkIndexer implements Startable {
+
   private static final Logger LOGGER = Loggers.get(BulkIndexer.class);
-  private static final long FLUSH_BYTE_SIZE = new ByteSizeValue(2, ByteSizeUnit.MB).bytes();
+  private static final long FLUSH_BYTE_SIZE = new ByteSizeValue(1, ByteSizeUnit.MB).bytes();
   private static final String REFRESH_INTERVAL_SETTING = "index.refresh_interval";
   private static final String ALREADY_STARTED_MESSAGE = "Bulk indexing is already started";
 
   private final EsClient client;
   private final String indexName;
   private boolean large = false;
-  private long flushByteSize = FLUSH_BYTE_SIZE;
   private BulkRequestBuilder bulkRequest = null;
   private Map<String, Object> largeInitialSettings = null;
-
   private final AtomicLong counter = new AtomicLong(0L);
+  private final int concurrentRequests;
+  private final Semaphore semaphore;
   private final ProgressLogger progress;
 
   public BulkIndexer(EsClient client, String indexName) {
@@ -69,6 +78,9 @@ public class BulkIndexer implements Startable {
     this.indexName = indexName;
     this.progress = new ProgressLogger(String.format("Progress[BulkIndexer[%s]]", indexName), counter, LOGGER)
       .setPluralLabel("requests");
+
+    this.concurrentRequests = Math.max(1, Runtime.getRuntime().availableProcessors() - 1);
+    this.semaphore = new Semaphore(concurrentRequests);
   }
 
   /**
@@ -79,15 +91,6 @@ public class BulkIndexer implements Startable {
   public BulkIndexer setLarge(boolean b) {
     Preconditions.checkState(bulkRequest == null, ALREADY_STARTED_MESSAGE);
     this.large = b;
-    return this;
-  }
-
-  /**
-   * Default value is {@link org.sonar.server.es.BulkIndexer#FLUSH_BYTE_SIZE}
-   * @see org.elasticsearch.common.unit.ByteSizeValue
-   */
-  public BulkIndexer setFlushByteSize(long l) {
-    this.flushByteSize = l;
     return this;
   }
 
@@ -113,29 +116,60 @@ public class BulkIndexer implements Startable {
 
       updateSettings(bulkSettings);
     }
-    bulkRequest = client.prepareBulk();
+    bulkRequest = client.prepareBulk().setRefresh(false);
     counter.set(0L);
     progress.start();
   }
 
   public void add(ActionRequest request) {
     bulkRequest.request().add(request);
-    counter.getAndIncrement();
-    if (bulkRequest.request().estimatedSizeInBytes() >= flushByteSize) {
-      executeBulk(bulkRequest);
-      bulkRequest = client.prepareBulk();
+    if (bulkRequest.request().estimatedSizeInBytes() >= FLUSH_BYTE_SIZE) {
+      executeBulk();
     }
+  }
+
+  public void addDeletion(SearchRequestBuilder searchRequest) {
+    searchRequest
+      .setScroll(TimeValue.timeValueMinutes(5))
+      .setSearchType(SearchType.SCAN)
+      // load only doc ids, not _source fields
+      .setFetchSource(false);
+
+    // this search is synchronous. An optimization would be to be non-blocking,
+    // but it requires to tracking pending requests in close().
+    // Same semaphore can't be reused because of potential deadlock (requires to acquire
+    // two locks)
+    SearchResponse searchResponse = searchRequest.get();
+    searchResponse = client.prepareSearchScroll(searchResponse.getScrollId()).get();
+    for (SearchHit hit : searchResponse.getHits()) {
+      add(client.prepareDelete(hit.index(), hit.type(), hit.getId()).request());
+    }
+  }
+
+  /**
+   * Delete all the documents matching the given search request. This method is blocking.
+   * Index is refreshed, so docs are not searchable as soon as method is executed.
+   */
+  public static void delete(EsClient client, String indexName, SearchRequestBuilder searchRequest) {
+    BulkIndexer bulk = new BulkIndexer(client, indexName);
+    bulk.start();
+    bulk.addDeletion(searchRequest);
+    bulk.stop();
   }
 
   @Override
   public void stop() {
-    try {
-      if (bulkRequest.numberOfActions() > 0) {
-        executeBulk(bulkRequest);
-      }
-    } finally {
-      progress.stop();
+    if (bulkRequest.numberOfActions() > 0) {
+      executeBulk();
     }
+    try {
+      if (semaphore.tryAcquire(concurrentRequests, 10, TimeUnit.MINUTES)) {
+        semaphore.release(concurrentRequests);
+      }
+    } catch (InterruptedException e) {
+      throw new IllegalStateException("Elasticsearch bulk requests still being executed after 10 minutes", e);
+    }
+    progress.stop();
 
     client.prepareRefresh(indexName).get();
     if (large) {
@@ -155,39 +189,54 @@ public class BulkIndexer implements Startable {
     req.get();
   }
 
-  private void executeBulk(BulkRequestBuilder bulkRequest) {
-    List<ActionRequest> retries = Lists.newArrayList();
-    BulkResponse response = bulkRequest.get();
+  private void executeBulk() {
+    final BulkRequestBuilder req = this.bulkRequest;
+    this.bulkRequest = client.prepareBulk().setRefresh(false);
+    semaphore.acquireUninterruptibly();
+    req.execute(new ActionListener<BulkResponse>() {
+      @Override
+      public void onResponse(BulkResponse response) {
+        counter.addAndGet(response.getItems().length);
 
-    for (BulkItemResponse item : response.getItems()) {
-      if (item.isFailed()) {
-        ActionRequest retry = bulkRequest.request().requests().get(item.getItemId());
-        retries.add(retry);
-      }
-    }
-
-    if (!retries.isEmpty()) {
-      LOGGER.warn(String.format("%d index requests failed. Trying again.", retries.size()));
-      BulkRequestBuilder retryBulk = client.prepareBulk();
-      for (ActionRequest retry : retries) {
-        retryBulk.request().add(retry);
-      }
-      BulkResponse retryBulkResponse = retryBulk.get();
-      if (retryBulkResponse.hasFailures()) {
-        LOGGER.error("New attempt to index documents failed");
-        for (int index = 0; index < retryBulkResponse.getItems().length; index++) {
-          BulkItemResponse item = retryBulkResponse.getItems()[index];
+        List<ActionRequest> retries = Lists.newArrayList();
+        for (BulkItemResponse item : response.getItems()) {
           if (item.isFailed()) {
-            StringBuilder sb = new StringBuilder();
-            String msg = sb.append("\n[").append(index)
-              .append("]: index [").append(item.getIndex()).append("], type [").append(item.getType()).append("], id [").append(item.getId())
-              .append("], message [").append(item.getFailureMessage()).append("]").toString();
-            LOGGER.error(msg);
+            ActionRequest retry = req.request().requests().get(item.getItemId());
+            retries.add(retry);
           }
         }
-      } else {
-        LOGGER.info("New index attempt succeeded");
+
+        if (!retries.isEmpty()) {
+          LOGGER.warn(String.format("%d index requests failed. Trying again.", retries.size()));
+          BulkRequestBuilder retryBulk = client.prepareBulk();
+          for (ActionRequest retry : retries) {
+            retryBulk.request().add(retry);
+          }
+          BulkResponse retryBulkResponse = retryBulk.get();
+          if (retryBulkResponse.hasFailures()) {
+            LOGGER.error("New attempt to index documents failed");
+            for (int index = 0; index < retryBulkResponse.getItems().length; index++) {
+              BulkItemResponse item = retryBulkResponse.getItems()[index];
+              if (item.isFailed()) {
+                StringBuilder sb = new StringBuilder();
+                String msg = sb.append("\n[").append(index)
+                  .append("]: index [").append(item.getIndex()).append("], type [").append(item.getType()).append("], id [").append(item.getId())
+                  .append("], message [").append(item.getFailureMessage()).append("]").toString();
+                LOGGER.error(msg);
+              }
+            }
+          } else {
+            LOGGER.info("New index attempt succeeded");
+          }
+        }
+        semaphore.release();
       }
-    }
+
+      @Override
+      public void onFailure(Throwable e) {
+        LOGGER.error("Fail to execute bulk index request: " + req, e);
+        semaphore.release();
+      }
+    });
   }
 }
