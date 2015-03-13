@@ -34,9 +34,6 @@ public final class Severity {
   public static final String CRITICAL = "CRITICAL";
   public static final String BLOCKER = "BLOCKER";
 
-  /**
-   * All the supported severity values, ordered from {@link #INFO} to {@link #BLOCKER}.
-   */
   public static final List<String> ALL = ImmutableList.of(INFO, MINOR, MAJOR, CRITICAL, BLOCKER);
 
   private Severity() {
